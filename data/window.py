@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 from random import choice, shuffle
+import json
 
 FONT = 'Courier'
 COLOR_BG = '#262A56'
@@ -13,7 +14,7 @@ class MainWindow(Tk):
         self.resizable(width=False, height=False)
         self.title('Password Manager')
 
-    def logo(self):
+    def logo_picture(self):
         self.canvas = Canvas(width=200, height=200, bg=COLOR_BG, highlightthickness=0)
         self.pass_logo = PhotoImage(file='data/logo.png')
         self.canvas_logo = self.canvas.create_image(100, 100, image=self.pass_logo)
@@ -30,8 +31,8 @@ class MainWindow(Tk):
         self.password.grid(row=5, column=0, sticky=W)
 
     def entries(self):
-        self.entry_sitename = Entry(justify=LEFT, width=33)
-        self.entry_sitename.grid(row=3, column=1, columnspan=2, pady=10, sticky=W)
+        self.entry_sitename = Entry(justify=LEFT, width=15)
+        self.entry_sitename.grid(row=3, column=1, pady=10, sticky=W)
         self.entry_sitename.focus()
         self.entry_login = Entry(justify=LEFT, width=33)
         self.entry_login.grid(row=4, column=1, columnspan=2, pady=10, sticky=W)
@@ -39,7 +40,9 @@ class MainWindow(Tk):
         self.entry_password.grid(row=5, column=1, pady=10, sticky=W)
 
     def buttons(self):
-        self.generate_button = Button(justify=RIGHT, width=10, height=1, text='Згенерувати', command=self.password_generator)
+        self.search_button = Button(justify=RIGHT, width=13, height=1, text='Пошук', command=self.check)
+        self.search_button.grid(row=3, column=1, sticky=E)
+        self.generate_button = Button(justify=RIGHT, width=13, height=1, text='Згенерувати', command=self.password_generator)
         self.generate_button.grid(row=5, column=1, sticky=E)
         self.configure_button = Button(justify=RIGHT, width=30, height=1, text='Додати', command=self.add_data)
         self.configure_button.grid(row=6, column=1)
@@ -52,6 +55,12 @@ class MainWindow(Tk):
         sitename = self.entry_sitename.get()
         login = self.entry_login.get()
         password = self.entry_password.get()
+        new_data = {
+            sitename: {
+                    'login': login,
+                    'password': password
+            }
+        }
 
         # popup check length of dates
         if len(sitename) == 0 or len(login) == 0 or len(password) < 12:
@@ -64,15 +73,40 @@ class MainWindow(Tk):
                                                  'Все введено правильно?')
         # if it`s ok - start work
         if start_work:
-            # save data to file data/short_data.txt
-            with open('data/short_data.txt', 'a', encoding='utf-8') as result:
-                result.write(f'{sitename} | {login} | {password} \n')
+            # save data to file data/short_data.json
+            try:
+                with open('data/short_data.json', 'r', encoding='utf-8') as data_read:
+                    # reading old data
+                    data = json.load(data_read)
+                    # updating old data with new data
+                    data.update(new_data)
+                with open('data/short_data.json', 'w', encoding='utf-8') as data_write:
+                    # saving updated data
+                    json.dump(data, data_write, indent=4)
+            except json.decoder.JSONDecodeError:
+                with open('data/short_data.json', 'w', encoding='utf-8') as data_write:
+                    # saving updated data
+                    json.dump(new_data, data_write, indent=4)
             # copy text to clipboard
             self.clipboard_clear()
             self.clipboard_append(self.entry_password.get())
             # popup when work is complete
             messagebox.showinfo(title='Вітаю', message='Форматування даних виконано успішно!')
     
+    def check(self):
+        try:
+            with open('data/short_data.json', 'r', encoding='utf-8') as data_file:
+                data = json.load(data_file)
+            if self.entry_sitename.get() in data:
+                messagebox.showinfo(title='Вітаю!', message=f"Даний сайт уже існує у списку,\n"
+                                     f"логін {data[self.entry_sitename.get()]['login']}\n"
+                                     f"пароль {data[self.entry_sitename.get()]['password']}\n")
+            else:
+                messagebox.showinfo(title='Упс!', message='Даного сайту немає у списку')
+        except json.decoder.JSONDecodeError:
+            messagebox.showinfo(title='Вітаю!', message='У БД порожньо!(')
+
+            
     def password_generator(self):
         """
         Password generator. Return random 15 symbols
