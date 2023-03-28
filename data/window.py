@@ -104,7 +104,7 @@ class MainWindow(Tk):
             else:
                 messagebox.showinfo(title='Упс!', message='Даного сайту немає у списку')
         except json.decoder.JSONDecodeError:
-            messagebox.showinfo(title='Вітаю!', message='У БД порожньо!(')
+            messagebox.showinfo(title='Упс!', message='У БД порожньо!(')
 
             
     def password_generator(self):
